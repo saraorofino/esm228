@@ -235,7 +235,7 @@ Fishers         Commercial fishers who use certain port
 
 ## Mismatches: An Example
 
-![Main road bias](figures/main_road.png)
+
 
 ## Declaring a population: an example
 
