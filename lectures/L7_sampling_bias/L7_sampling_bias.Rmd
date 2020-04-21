@@ -62,19 +62,39 @@ Carbon footprint of Santa Barbara county households:
 
 ```{r sb-population, echo=TRUE, message=F, eval=TRUE, cache=TRUE}
 set.seed(228)
+# Simulate population of Santa Barbara using uniform distribution
 population <- declare_population(
-  households = add_level(N=36000, 
-     tco2e=runif(n=N, min=5, max=120))
+  households = add_level(N=36000, # how many households
+     tco2e=runif(n=N, min=5, max=120)) #tons of carnon equivalent drawn from a uniform distribution
 )
 pop <- population()
 plot <- ggplot(pop, aes(x=tco2e)) + 
   geom_histogram(color="black", fill="white")
+
+# Test with a different distribution - normal
+population_norm <- declare_population(
+  households = add_level(N=36000, # how many households
+     tco2e=rnorm(N, mean=65, sd=12)) #tons of carnon equivalent drawn from a uniform distribution
+)
+
+pop_norm <- population_norm()
+plot_norm <- ggplot(pop2, aes(x=tco2e)) + 
+  geom_histogram(color="black", fill="white")
+
+
+
 ```
+
+Breakout questions: Is this a reasonanble distribution? If not, what would be a more reasonable distribution and how do you show that in code?  
+
+ - Would more likley be normally distributed (or possibly log normal)
+ - can use rnorm(n=N, mean = u, sd = sd) 
 
 ## Toy example w/ single item
 
 ```{r sb-population2, echo=FALSE, message=F, eval=TRUE}
 plot
+plot_norm
 ```
 
 ## Drawing a sample
@@ -161,7 +181,11 @@ sd(store) #standard error of sample
 ```
 
 - *Standard deviation* of a sample describes the variance in the data ($\sqrt{\frac{1}{n} \sum_{i=1}^n (y_i - \bar{y})^2}$)
-- *Standard error* of a sample describes the expected sampling variance based on the sampling frame over repeated draws
+    - This is the variability or spread of the population data or the sample data  
+- *Standard error* of a sample describes the expected sampling variance based on the sampling frame over repeated draws  
+    - This is the variability or spread of the **sample mean** compared to the true value of the **population mean**  
+    - I think this means the standard deviation of the sample is the standard error  
+    - i.e. How much error does our sampling procedure have?  
 
 ## Standard error and sample size
 
@@ -184,11 +208,13 @@ grid.arrange(sam.dist,sam.dist2,ncol=1)
 ## Standard error and sample size
 
 ```{r samp-dist-many, cache=TRUE, echo=FALSE}
+#Define sample sizes from 250 to 100000 in increments of 250
 samps <- seq(from=250, to=10000, by=250)
-sims <- 1000
+sims <- 1000 #run 1000 simulations
 store <- rep(NA, sims)
 se.store <- rep(NA, length(samps))
 
+# For each of the sample sizes find the mean and standard error for graphing
 for (j in 1:length(samps)){
 
 for (i in 1:sims){
@@ -204,6 +230,10 @@ dta <- data.frame(samps,se.store) %>% mutate(before=ifelse((samps==2000 | samps=
 ggplot(dta, aes(x=samps,y=se.store,color=before)) + geom_point(size=4) + xlab("Sample Size") + ylab("Standard Error of Sample") + theme(legend.position = "none")
 
 ```
+
+Notes: Expanding the sample size shrinks the sampling distribution and thus the margin of error by converging on the true mean of the population. Can use this type of graph comparing standard error of sample to the sample size to know how large your sample size needs to be in order to reach a desired margin of error (i.e. sample mean is within 0.5 tons of carbon equivalent of true population means).
+
+We can see that there is a large gain in accuracy from 100 to 1000, but the gains from moving from 1000 to 5000 are pretty small relative to the amount of time or resources it would take to execute that large of a sample. 
 
 ## Sampling bias
 
@@ -244,14 +274,16 @@ set.seed(228)
 population <- declare_population(
   households = add_level(N=500, 
      main=draw_binary(N=N, prob = 0.5),
-     satisfied=correlate(given = main, rho = 0.5,
-                         draw_binary, prob = 0.5)
+     satisfied=correlate(given = main, rho = 0.5, #rho - given you live on main road, more likely to be satisfied with services
+                         draw_binary, prob = 0.5) #overall probability of being satisfied is 50%
 ))
 pop <- population()
 
 kable(table(pop$main,pop$satisfied)) %>% 
   add_header_above(c("main"=1,"satisfied"=2))
 ```
+Given you live on the main road (0) more people are satisfied (0), and if you do not live on the main road (1) you are more likely to be dissatisfied (1) with waste services.  
+
 
 ## Consequences of sampling procedures
 
@@ -265,6 +297,7 @@ The difference between these two values is **bias**, not sampling variability.
 - Look for any part of the population systematically excluded from the sample.
 - Change interpretation to match sample actually drawn.
 
+Note: If we only sample people on the main road, there is bias because they have different perceptions than the population as a whole.  
 
 ## Population / Sample Mismatches
 
@@ -319,7 +352,7 @@ sam.n <- 250 #attempted sample size
 store <- rep(NA, sims)
 for (i in 1:sims){
   store[i] <- mean(pop[sample(1:500,sam.n),] %>%
-                     filter(R==1) %>%
+                     filter(R==1) %>% # only include if they will be home and answer the door
                      pull(satisfied))
 }
 
@@ -337,6 +370,7 @@ sam.dist <- ggplot(data.frame(store), aes(x=store)) +
                 color = "blue", size=1.5)
 sam.dist
 ```
+Notes: What we see is that using this sample procedure, we are wrong with trying to estimate the satisfaction. The blue line shows the mean of the sample, which has more responses from people along the main road who are also more likely to be satisified, shown over the underlying population data.  
 
 ## Common sources of response bias
 
