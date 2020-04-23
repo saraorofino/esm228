@@ -118,11 +118,13 @@ sam.dist <- ggplot(data.frame(store), aes(x=store)) +
 sam.dist
 ```
 
+Stratified sampling with sample weights is one of the simplest ways to confront sampling bias.  
+
 ## Sample Weights
 
 **Bias** in the above example comes from the over-inclusion of main street residents as compared to side street residents. Let's divide them into two groups:
 
-
+We can assume that the respondents from the main street are random and the respondents from the side streets are random. By splitting the population into two main groups we can randomly sample within these gruops and then find weighted averages for the population based on how much of the population falls within each strata.     
 
 ## Strata Weights
 
@@ -157,22 +159,23 @@ mean(pop$satisfied)
 ```
 
 ## Strata Weights, Sampling Distribution Code
+Estimating how to do this with sampling  
 
 ```{r strata-sam-dist, cache=TRUE}
 sims <- 1000 #simulations
 sam.n <- 250 #attempted sample size
-store <- rep(NA, sims)
+store <- rep(NA, sims) #df to store the simulations so we can simulate the distribution
 
 for (i in 1:sims){
-  index <- sample(1:500,sam.n) #drawn sample
-  pop <- reporting(pop)
+  index <- sample(1:500,sam.n) #draw a sample
+  pop <- reporting(pop) # actual population
   main <- mean(pop[index,] %>%
-               filter(R==1 & main==1) %>%
-               pull(satisfied))
+               filter(R==1 & main==1) %>% # Find main road participants who are likely to answer the door
+               pull(satisfied)) # extract the proportion satisfied
   side <- mean(pop[index,] %>%
-               filter(R==1 & main==0) %>%
-               pull(satisfied))
-  store[i] <- main * 0.5 + side * 0.5
+               filter(R==1 & main==0) %>% # Find side road participants who are likely to answer the door
+               pull(satisfied)) # extract the proportion satisfied 
+  store[i] <- main * 0.5 + side * 0.5 # weighting these 50-50 because our population is half on main road, half not
   
 }
 ```
@@ -198,7 +201,7 @@ strata.dist
     + i.e., missingness is at random within strata
     
 2. The distribution of the population into strata is known
-
+   - Here we assume that half of the population lives on main roads and half live on side roads. This breakdown needs to be known  
 
 **Note:** we have not assumed any advanced knowledge about response rates within strata and have still recovered the population parameter
 
@@ -242,7 +245,9 @@ side.hist <- ggplot(data.frame(side), aes(x=side)) +
 
 grid.arrange(main.hist,side.hist,ncol=2)
 ```
-
+Why are there larger tails in the side street if we sample at the same rate?  
+ - The main street residents respond at a higher rate so we effectively get more samples from the main road participants and are therefore closer to the mean then when we sample from the side street population, where we have less responses and thereofore a higher deviation from the mean.  
+ 
 ## Difference between strata
 
 ```{r diff-strata, echo=FALSE}
@@ -277,6 +282,7 @@ We are not required to sample all strata at equal intensity.
            sample(side.index,175))
 
 ```
+We could sample at a higher rate in the side street if we are more interested in precise estimates of dissatisfaction, which we think is more likley with residents on side streets.  
 
 ## Disproportionate Stratification
 
@@ -286,15 +292,15 @@ store <- rep(NA, sims)
 
 for (i in 1:sims){
   sam <- c(sample(main.index,75),
-           sample(side.index,175)) #drawn sample
+           sample(side.index,175)) #drawn sample but this time it is different for the two groups
   pop <- reporting(pop)
   main <- mean(pop[sam,] %>%
-               filter(R==1 & main==1) %>%
-               pull(satisfied))
+               filter(R==1 & main==1) %>% # participants on the main road who answer the door
+               pull(satisfied)) # extract the proportion satisfied 
   side <- mean(pop[sam,] %>%
-               filter(R==1 & main==0) %>%
-               pull(satisfied))
-  store[i] <- main * 0.5 + side * 0.5
+               filter(R==1 & main==0) %>% # participants on side road who answer the door
+               pull(satisfied)) # extract the proportion satisfied 
+  store[i] <- main * 0.5 + side * 0.5 # main and side street residents are 50-50
   
 }
 ```
@@ -371,6 +377,9 @@ grid.arrange(main.hist2,side.hist2,ncol=2)
 ```{r sam-type-compare, echo=FALSE}
 grid.arrange(main.hist,side.hist,main.hist2,side.hist2,ncol=2)
 ```
+Proportionate sampling - we knock on the same number of doors on main roads and side roads. But since the main road participants are more likely to answer the door there is a larger proportion of main street residents in the sample. We can make a more precise claim about these residents.  
+
+Disproportionate sampling - Because we know main street residents answer their doors at higher rates, we decide to only knock on 75 doors on the main road and 175 doors on the side roads. This gives us a lower proportion of main street residents and makes that estimate a little less precise, but it makes the proportion of side street residents in the sample larger and gains precision. Since we are interested in policy based on the responses from the side street subgroup we want to enhance precision with our sampling in this group.  
 
 ## Sampling distribution of difference between strata
 
