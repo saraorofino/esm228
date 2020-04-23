@@ -51,7 +51,7 @@ In practice, it is often  difficult to take a random sample from our target popu
 
 ## Main Road Bias Example
 
-![Main road bias](figures/main_road.png)
+
 
 ## Declaring a population: an example
 
@@ -122,7 +122,7 @@ sam.dist
 
 **Bias** in the above example comes from the over-inclusion of main street residents as compared to side street residents. Let's divide them into two groups:
 
-![Resident Type Strata](figures/8_main_side_strata.png)
+
 
 ## Strata Weights
 
