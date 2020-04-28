@@ -25,23 +25,23 @@ library(kableExtra)
 
 ## Manta Trust: Theory of Change
 
-![](figures/mobulid_rays.png)
+
 
 ## Oceanic Manta Ray
 
-![](figures/manta_oceanic.png)
+
 
 ## Conservation Strategies
 
-![](figures/safe_release.png)
+
 
 ## Fish Landings in the Phillipines
 
-![](figures/phillipines_landings.png)
+
 
 ## Release
 
-![](figures/manta_release.png)
+
 
 
 ## Measurement Goal & Measure
@@ -116,7 +116,9 @@ my_estimand <- declare_estimands(mean(know),
 ```
 
 ## DeclareDesign()
-
+This is talking about the possible reporting or samplinig bias  
+ - We don't suspect there will be much reporting bias because the question doesn't involve any illegal or socially undesirable behaviors  
+ - We assume that any given person you approach would have an 80% chance of responding to the survey  
 ```{r report-samp}
 reporting <- declare_assignment(prob=0.8,
                   assignment_variable = "R")
@@ -126,9 +128,10 @@ sampling <- declare_sampling(strata=port,
                strata_n=c(80,80,80,80,8,8,8))
 #PH: saying that we want to sample by port, our strata. We're going to take 80 units from the first, second, third, and fourth ports, and then 8 units from the remaining ports.
 ```
+Sampling procedure: stratify by port because the number of captains at each port are pretty different  
 
 ## DeclareDesign()
-
+You can use this to calculate a strata weighted mean  
 ```{r declare-estimator}
 
 strata_weighted_mean <- function(data){
@@ -151,6 +154,7 @@ strata_weighted_mean <- function(data){
 ```
 
 ## DeclareDesign()
+Here the sd_estimate is the margin of error that we are interest in  
 
 ```{r diagnosis, cache=TRUE}
 
