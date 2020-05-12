@@ -7,24 +7,29 @@ output: html_document
 
 ## Power Problem Set 
 
+```{r libraries}
+library(DeclareDesign)
+library(kableExtra)
+```
+
 ### Background
 
 Uses the Buntaine et al 2020 paper "Citizen Monitoring of Waterways Decreases Pollution in China by Supporting Government Action and Oversight"  
 
 In this study the authors estimated the treatment (monitoring water quality and disseminating that information to local governments) resulted in a 0.19 point *reduction* in water pollution on an index scale.  
 
-MEEPA wants to assess wheterh the same result holds for a neighboring province with 500 small, urban waterways that need remediation. Determine what the appropriate sample size is for a follow-up evaluation to ensure the experiment has enough power to be able to confidently reject a null effect given a similar effect size.  
+MEEPA wants to assess whether the same result holds for a neighboring province with 500 small, urban waterways that need remediation. Determine what the appropriate sample size is for a follow-up evaluation to ensure the experiment has enough power to be able to confidently reject a null effect given a similar effect size.  
 
 
 ### Conceptual Design
 
-*Treatment*:   
+*Treatment*: Water quality monitoring and dissemination of information to either local governments or the public     
 
-*Sample*:  
+*Sample*: Sample waterways are selected based on a list of urban waterways identified as needing cleanup within the province of interest   
 
-*Randomization*:  
+*Randomization*:  Stratified randomization of waterways with similar baseline conditions   
 
-*Outcome Measure*:  
+*Outcome Measure*:  Water quality, measured through a change in the water quality index (WQI)  
 
 
 
@@ -39,19 +44,160 @@ MEEPA wants to assess wheterh the same result holds for a neighboring province w
  - Treatment effect = -0.19  
  - Estimators: difference in means (DIM) and a difference in differences (DID)  
  
-*Determine the power for this baseline evaluation for both DIM and DID*  
+*5. Determine the power for this baseline evaluation for both DIM and DID*  
+
+```{r baseline-evaluation, echo=TRUE}
+set.seed(228)
+
+### Declare population 
+population <- declare_population(
+  waterway = add_level(N=500, 
+    wqi=runif(n=N, min=0.38, max=8.21),
+    u=rnorm(n=N, mean=1.1, sd=0.1))
+)
+pop <- population()
 
 
-*What is the power if you double the sample size for both estimators?*  
+### Potential Outcomes
+potential_outcomes <- 
+  declare_potential_outcomes(
+    Y_D_0=wqi + u,
+    Y_D_1=wqi + u - 0.19)
+## check to make sure outcomes make sense
+po <- potential_outcomes(pop)
+kable(po[1:5,], digits=1)
+
+### Sampling
+sampling <- declare_sampling(n=100)
+sam <- sampling(po)
+
+### Declare assignment
+assigning <- declare_assignment(m = nrow(sam)/2,
+                  assignment_variable="D")
+assigned <- assigning(sam)
+kable(assigned[1:5,c(1:2,4:5,7:8)], 
+      digits = 1)
+
+### Declare reveal
+revealing <- declare_reveal(assignment_variables=D)
+
+### Declare estimand
+estimand <- declare_estimand(ATE = -0.19)
+estimand(po)
+
+### Declare estimators 
+dim <- declare_estimator(Y ~ D, estimand = estimand,  
+          model =  difference_in_means, label = "DIM") 
+
+did <- declare_estimator(Y - wqi ~ D, 
+                         estimand = estimand,  
+          model =  difference_in_means, label = "DID") 
+
+### Declare design
+design <- population + potential_outcomes + sampling +
+          assigning + revealing + estimand + dim + did
+
+### Diagnose design
+diagnosis <- diagnose_design(design, sims=1000)
+diagnosis$diagnosands_df[,c(1,3,5,9,11)] %>%
+  kable()
+```
+
+DID = 1.000  
+DIM = 0.063  
 
 
-*Determine the sample size needed to achieve power of 0.80 and 0.95 using the best estimator*  
+*6. What is the power if you double the sample size for both estimators?*  
+
+```{r double-sample-size, echo=TRUE}
+set.seed(228)
+
+### Increase sample size 
+sampling2 <- declare_sampling(n=200)
+sam <- sampling2(po)
+
+### Assignment 
+assigning <- declare_assignment(m = nrow(sam)/2,
+                  assignment_variable="D")
+
+assigned <- assigning(sam)
+kable(assigned[1:5,c(1:2,4:5,7:8)], 
+      digits = 1)
+
+### Declare design
+design2 <- population + potential_outcomes + sampling2 +
+          assigning + revealing + estimand + dim + did
+
+### Diagnose design
+diagnosis2 <- diagnose_design(design2, sims=1000)
+diagnosis2$diagnosands_df[,c(1,3,5,9,11)] %>%
+  kable()
+```
+
+DID = 1.000 
+DIM = 0.081
 
 
-*Given a fixed sample size (n=100), what is the minimum treatment effect that can be detected at a power of 0.80 for the best estimator?*  
+*7. Determine the sample size needed to achieve power of 0.80 and 0.95 using the best estimator*  
+
+Using the difference in difference method, power is already 1, so we will try lowering the sample size.  
+
+```{r did-power}
+set.seed(228)
+
+####### Finding a power of 0.95
+
+### Decrease sample size 
+sampling3 <- declare_sampling(n=15)
+sam <- sampling3(po)
+
+assigning <- declare_assignment(m = nrow(sam)/2,
+                  assignment_variable="D")
+
+assigned <- assigning(sam)
+kable(assigned[1:5,c(1:2,4:5,7:8)], 
+      digits = 1)
+
+### Declare design
+design3 <- population + potential_outcomes + sampling3 +
+          assigning + revealing + estimand + did
+
+### Diagnose design
+diagnosis3 <- diagnose_design(design3, sims=1000)
+diagnosis3$diagnosands_df[,c(1,3,5,9,11)] %>%
+  kable()
+
+####### Finding a power of 0.80
+
+### Decrease sample size 
+sampling4 <- declare_sampling(n=12)
+sam <- sampling4(po)
+
+assigning <- declare_assignment(m = nrow(sam)/2,
+                  assignment_variable="D")
+
+assigned <- assigning(sam)
+kable(assigned[1:5,c(1:2,4:5,7:8)], 
+      digits = 1)
+
+### Declare design
+design4 <- population + potential_outcomes + sampling3 +
+          assigning + revealing + estimand + did
+
+### Diagnose design
+diagnosis4 <- diagnose_design(design4, sims=1000)
+diagnosis4$diagnosands_df[,c(1,3,5,9,11)] %>%
+  kable()
+```
+
+Power = 0.95 requires a sample size of about 15    
+
+Power = 0.80 requires a sample size of about 12  
+
+*8. Given a fixed sample size (n=100), what is the minimum treatment effect that can be detected at a power of 0.80 for the best estimator?*  
 
 
-*If the following initial assumptions are changed, what are the implications for power in the previous questions?*  
+*9. If the following initial assumptions are changed, what are the implications for power in the previous questions?*  
 **New initial conditions**  
 
  - Population size = 250  
@@ -59,3 +205,64 @@ MEEPA wants to assess wheterh the same result holds for a neighboring province w
  - Baseline WQI is random uniform [3.92,8.21]  
  
  
+```{r change-initial-conditions, echo=TRUE}
+set.seed(228)
+
+### Declare population 
+population2 <- declare_population(
+  waterway = add_level(N=250, 
+    wqi=runif(n=N, min=3.92, max=8.21),
+    u=rnorm(n=N, mean=1.1, sd=0.1))
+)
+pop2 <- population2()
+
+
+### Potential Outcomes
+potential_outcomes <- 
+  declare_potential_outcomes(
+    Y_D_0=wqi + u,
+    Y_D_1=wqi + u - 0.19)
+## check to make sure outcomes make sense
+po2 <- potential_outcomes(pop2)
+kable(po2[1:5,], digits=1)
+
+### Sampling
+sampling6 <- declare_sampling(n=100)
+sam <- sampling6(po2)
+
+### Declare assignment
+assigning <- declare_assignment(m = nrow(sam)/2,
+                  assignment_variable="D")
+assigned <- assigning(sam)
+kable(assigned[1:5,c(1:2,4:5,7:8)], 
+      digits = 1)
+
+### Declare reveal
+revealing <- declare_reveal(assignment_variables=D)
+
+### Declare estimand
+estimand <- declare_estimand(ATE = -0.19)
+estimand(po2)
+
+### Declare estimators 
+dim <- declare_estimator(Y ~ D, estimand = estimand,  
+          model =  difference_in_means, label = "DIM") 
+
+did <- declare_estimator(Y - wqi ~ D, 
+                         estimand = estimand,  
+          model =  difference_in_means, label = "DID") 
+
+### Declare design
+design6 <- population2 + potential_outcomes + sampling6 +
+          assigning + revealing + estimand + dim + did
+
+### Diagnose design
+diagnosis6 <- diagnose_design(design6, sims=1000)
+diagnosis6$diagnosands_df[,c(1,3,5,9,11)] %>%
+  kable()
+```
+
+DID = 1.00  
+DIM = 0.117  
+
+Changing the population size and the baseline variation in water quality doesn't seem to change the power of the difference in differences model, but it does seem to increase the power of the difference in means model relative to the first initial baseline assessment.  
