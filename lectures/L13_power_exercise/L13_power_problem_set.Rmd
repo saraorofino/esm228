@@ -1,0 +1,61 @@
+---
+title: "Session 13 Power Problem Set"
+author: "Sara Orofino"
+date: "5/12/2020"
+output: html_document
+---
+
+## Power Problem Set 
+
+### Background
+
+Uses the Buntaine et al 2020 paper "Citizen Monitoring of Waterways Decreases Pollution in China by Supporting Government Action and Oversight"  
+
+In this study the authors estimated the treatment (monitoring water quality and disseminating that information to local governments) resulted in a 0.19 point *reduction* in water pollution on an index scale.  
+
+MEEPA wants to assess wheterh the same result holds for a neighboring province with 500 small, urban waterways that need remediation. Determine what the appropriate sample size is for a follow-up evaluation to ensure the experiment has enough power to be able to confidently reject a null effect given a similar effect size.  
+
+
+### Conceptual Design
+
+*Treatment*:   
+
+*Sample*:  
+
+*Randomization*:  
+
+*Outcome Measure*:  
+
+
+
+### Power Analysis (code)
+
+**Initial Assumptions**  
+
+ - Population size = 500  
+ - Initial sample size = 100  
+ - Baseline WQI is random uniform [0.38,8.21]  
+ - Estimated rate of change from baseline WQI = 1.1 +/- 0.1 (sd)  
+ - Treatment effect = -0.19  
+ - Estimators: difference in means (DIM) and a difference in differences (DID)  
+ 
+*Determine the power for this baseline evaluation for both DIM and DID*  
+
+
+*What is the power if you double the sample size for both estimators?*  
+
+
+*Determine the sample size needed to achieve power of 0.80 and 0.95 using the best estimator*  
+
+
+*Given a fixed sample size (n=100), what is the minimum treatment effect that can be detected at a power of 0.80 for the best estimator?*  
+
+
+*If the following initial assumptions are changed, what are the implications for power in the previous questions?*  
+**New initial conditions**  
+
+ - Population size = 250  
+ - Initial sample size = 100  
+ - Baseline WQI is random uniform [3.92,8.21]  
+ 
+ 
