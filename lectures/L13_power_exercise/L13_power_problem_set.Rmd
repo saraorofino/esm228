@@ -1,13 +1,13 @@
 ---
 title: "Session 13 Power Problem Set"
-author: "Sara Orofino"
+author: "Sara Orofino, AJ Zekanoski, Allison Hacker"
 date: "5/12/2020"
 output: html_document
 ---
 
 ## Power Problem Set 
 
-```{r libraries}
+```{r libraries, include=FALSE, warning=FALSE, message=FALSE}
 library(DeclareDesign)
 library(kableExtra)
 ```
