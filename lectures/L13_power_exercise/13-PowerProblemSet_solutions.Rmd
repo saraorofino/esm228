@@ -1,0 +1,146 @@
+---
+title: "13 - Problem Set Solutions"
+author: "Mark Buntaine"
+date: "5/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(DeclareDesign)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(dplyr)
+```
+
+## 5. What is the power of this baseline evaluation design for a difference-in-means estimator? difference-in-difference estimator?
+
+```{r sol5}
+set.seed(228)
+population <- declare_population(
+  waterway = add_level(N=500, 
+    wqi=runif(n=N, min=0.38, max=8.21),
+    u=rnorm(n=N, mean=1.1, sd=0.1))
+)
+
+pop <- population()
+hist(pop[,2], xlab="Baseline Water Quality Index", 
+     main="Baseline WQI", cex=24)
+
+te <- -0.19 #setting treatment effect
+samp_size <- 100 #setting sample size
+
+potential_outcomes <- 
+  declare_potential_outcomes(
+    Y_D_0= wqi * u,
+    Y_D_1= wqi * u + te)
+
+po <- potential_outcomes(pop)
+kable(po[1:5,], digits=1)
+
+sampling <- declare_sampling(n=samp_size)
+sam <- sampling(po)
+kable(sam[1:5,c(1:2,4:6)], row.names = FALSE,
+      digits = 1)
+
+assigning <- declare_assignment(prob = 0.5,
+                  assignment_variable="D")
+assigned <- assigning(sam)
+kable(assigned[1:5,c(1:2,4:5,7:8)], 
+      digits = 1)
+
+ggplot(data=assigned, aes(x=as.factor(D), y=wqi)) +
+geom_violin(aes(fill=as.factor(D), color=as.factor(D))) +
+theme_minimal(base_size = 24) + xlab("Assignment")
+
+revealing <- declare_reveal(assignment_variables=D)
+
+estimand <- declare_estimand(ATE = te)
+estimand(po)
+
+dim <- declare_estimator(Y ~ D, estimand = estimand,  
+          model =  difference_in_means, label = "DIM")
+
+did <- declare_estimator(Y - wqi ~ D, 
+                         estimand = estimand,  
+          model =  difference_in_means, label = "DID")
+
+design <- population + potential_outcomes + sampling +
+          assigning + revealing + estimand + dim + did
+
+diagnosis <- diagnose_design(design, sims=500)
+diagnosis$diagnosands_df[,c(1,3,5,9,11)] %>%
+  kable()
+```
+
+## 6. What is the power if you double the sample size to n=200 for both estimators?
+
+```{r sol6}
+set.seed(228)
+
+design2 <- redesign(design, samp_size=200)
+
+diagnosis2 <- diagnose_design(design2, sims=500)
+diagnosis2$diagnosands_df[,c(1,4,6,10,12)] %>%
+  kable()
+```
+
+## 7. What sample size do you need to achieve a power of 0.80 using the best estimator? What sample size do you need to achieve a power of 0.95?
+
+Note: you could calculate this manually, by changing 'samp_size' repeatedly and running the simulation again. Here is a way to try this for lots of values at once:
+
+```{r sol7}
+
+designs <- redesign(design, samp_size=seq(from=100, to=500, by=20))
+
+diagnoses <- diagnose_design(designs, sims=500)
+
+diagnoses$diagnosands_df %>%
+  filter(estimator_label=="DID") %>%
+  ggplot(aes(x=samp_size,y=power)) +
+  geom_line()
+
+```
+
+## 8. Given a fixed sample size of n = 100, what is the minimum treatment effect that can be detected at a power of 0.80 for the best estimator?
+
+Note: again, you could calculate this manually by trying out many different values for 'te' and re-running the simulation. Here is a way to try out lots of values at once:
+
+```{r sol8}
+
+designs <- redesign(design, te=seq(from=-0.7, to=0, by=0.05))
+
+diagnoses <- diagnose_design(designs, sims=500)
+
+diagnoses$diagnosands_df %>%
+  filter(estimator_label=="DID") %>%
+  ggplot(aes(x=te,y=power)) +
+  geom_line() +
+  geom_hline(yintercept=0.8,
+             linetype="dashed", 
+             color = "red")
+
+```
+
+## 9. MEEPA would like to understand the implications of working only in the most polluted waterways for the evaluation. If you change the following initial assumptions, what are the implications for power in the previous questions?
+
+```{r sol9}
+set.seed(228)
+population2 <- declare_population(
+  waterway = add_level(N=250, 
+    wqi=runif(n=N, min=3.92, max=8.21),
+    u=rnorm(n=N, mean=1.1, sd=0.1))
+)
+
+design_high <- population2 + potential_outcomes + sampling +
+          assigning + revealing + estimand + dim + did
+
+diagnosis <- diagnose_design(design_high, sims=500)
+diagnosis$diagnosands_df[,c(1,3,5,9,11)] %>%
+  kable()
+
+# now add the above steps again for each solution
+
+```
